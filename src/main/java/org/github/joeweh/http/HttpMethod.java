@@ -1,4 +1,3 @@
 package org.github.joeweh.http;
 
-public class HttpMethod {
-}
+public enum HttpMethod { GET, POST, PUT, DELETE }
