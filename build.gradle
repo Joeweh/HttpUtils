@@ -1,9 +1,11 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
+    id 'signing'
 }
 
-group 'org.github.joeweh.http'
-version '1.0-SNAPSHOT'
+group 'io.github.joeweh'
+version '1.0'
 
 repositories {
     mavenCentral()
@@ -16,4 +18,69 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications{
+
+        mavenJava(MavenPublication){
+
+            groupId = 'io.github.joeweh'
+            artifactId = 'http-utils'
+            version = '1.0'
+            from components.java
+
+            pom {
+                name = 'Http Utils'
+                description = 'Wrapper library for java\'s HttpURLConnection to simplify java http development'
+                url = 'https://github.com/Joeweh/HttpUtils'
+                inceptionYear = '2022'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'josephsiracusa'
+                        name = 'Joseph Siracusa'
+                        email = 'joeyqsa@outlook.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git:github.com/Joeweh/HttpUtils.git'
+                    developerConnection = 'scm:git:ssh://github.com/Joeweh/HttpUtils.git'
+                    url = 'https://github.com/Joeweh/HttpUtils'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = project.properties["ossrhUsername"]
+                password = project.properties["ossrhPassword"]
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
 }

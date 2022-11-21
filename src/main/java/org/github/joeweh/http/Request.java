@@ -7,34 +7,33 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import java.net.URL;
+
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class HttpRequest implements Callable<HttpResponse> {
+public class Request implements Callable<Response> {
     private final String urlString;
-    private final HttpMethod method;
+    private final Method method;
     private final String requestBody;
-    private final HttpHeaderMap headers;
+    private final Map<String, String> headers;
 
     private HttpsURLConnection con;
 
-    public HttpRequest(HttpMethod method, String url, HttpHeaderMap properties)
-    {
+    public Request(Method method, String url, Map<String, String> headers) {
         this.urlString = url;
         this.method = method;
-        this.headers = properties;
+        this.headers = headers;
         this.requestBody = null;
     }
 
-    public HttpRequest(HttpMethod method, String url, HttpHeaderMap properties, String requestBody)
-    {
+    public Request(Method method, String url, Map<String, String> headers, String requestBody) {
         this.urlString = url;
         this.method = method;
-        this.headers = properties;
+        this.headers = headers;
         this.requestBody = requestBody;
     }
 
-    public HttpResponse execute() {
+    public Response execute() {
         try {
             URL url = new URL(this.urlString);
 
@@ -43,7 +42,7 @@ public class HttpRequest implements Callable<HttpResponse> {
             this.con.setRequestMethod(this.method.toString());
 
             if (this.headers != null) {
-                for (Map.Entry<String, String> entry : this.headers.getKeyValuePairs().entrySet())
+                for (Map.Entry<String, String> entry : this.headers.entrySet())
                 {
                     this.con.setRequestProperty(entry.getKey(), entry.getValue());
                 }
@@ -77,12 +76,11 @@ public class HttpRequest implements Callable<HttpResponse> {
         return null;
     }
 
-    private HttpResponse processResponse() {
+    private Response processResponse() {
         try {
             int responseCode = this.con.getResponseCode();
 
             if (this.isSuccessful(responseCode)) {
-                // Read & Return Success Response
                 BufferedReader in = new BufferedReader(new InputStreamReader(this.con.getInputStream()));
 
                 String inputLine;
@@ -94,11 +92,10 @@ public class HttpRequest implements Callable<HttpResponse> {
 
                 in.close();
 
-                return new HttpResponse(true, responseCode, response.toString());
+                return new Response(true, responseCode, this.con.getHeaderFields(), response.toString());
             }
 
-            // Return Error Response
-            return new HttpResponse(false, responseCode, null);
+            return new Response(false, responseCode, this.con.getHeaderFields(), null);
         }
 
         catch (IOException e) {
@@ -108,49 +105,14 @@ public class HttpRequest implements Callable<HttpResponse> {
         return null;
     }
 
-    private boolean isSuccessful(int responseCode)
-    {
-        boolean hasSucceeded = false;
-
-        switch (this.method)
-        {
-            case GET:
-                if (HttpsURLConnection.HTTP_OK == responseCode)
-                {
-                    hasSucceeded = true;
-                }
-                break;
-
-            case POST:
-                if (HttpsURLConnection.HTTP_OK == responseCode || HttpsURLConnection.HTTP_CREATED == responseCode)
-                {
-                    hasSucceeded = true;
-                }
-
-                break;
-
-            case PUT:
-                if (HttpsURLConnection.HTTP_OK == responseCode)
-                {
-                    hasSucceeded = true;
-                }
-
-                break;
-
-            case DELETE:
-                if (HttpsURLConnection.HTTP_OK == responseCode)
-                {
-                    hasSucceeded = true;
-                }
-
-                break;
-        }
-
-        return hasSucceeded;
+    private boolean isSuccessful(int responseCode) {
+        return responseCode > 199 && responseCode < 300;
     }
 
     @Override
-    public HttpResponse call() {
+    public Response call() {
         return this.execute();
     }
+
+    public enum Method { GET, POST, PUT, DELETE }
 }
